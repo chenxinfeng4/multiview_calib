@@ -27,8 +27,9 @@ def project_points(pts, K, R, t, dist=None, image_shape=None):
     proj = np.dot(K, np.dot(R,pts_.T) + t.reshape(3,1))
     z = proj[2]
     xy = proj[:2].T/z[:,None]
-    mask_in_front = z > 0  
-    
+    # mask_in_front = z > 0  #original
+    mask_in_front = z > -np.inf #cxf
+
     rvec = cv2.Rodrigues(R)[0]
     proj = cv2.projectPoints(pts_, rvec, t, K, dist)[0].reshape(-1,2)
     

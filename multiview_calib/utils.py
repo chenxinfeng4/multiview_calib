@@ -154,6 +154,9 @@ def config_logger(log_file=None):
 
     rootLogger = logging.getLogger()
 
+    if rootLogger.hasHandlers():
+        rootLogger.handlers.clear()
+
     if log_file is not None:
         fileHandler = logging.FileHandler(log_file)
         fileFormatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)s]> %(message)s")
