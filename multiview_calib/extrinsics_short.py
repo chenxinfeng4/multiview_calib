@@ -411,6 +411,7 @@ def compute_relative_poses_robust(views, view_tree, intrinsics, landmarks,
                   
         Rd = np.mean(relative_pose_robust['Rd'], 0)
         td = np.mean(relative_pose_robust['td'], 0)
+        td = np.squeeze(td)
         
         pts1, pts2, ids_common = _common_landmarks(landmarks[view1]["landmarks"],
                                                    landmarks[view2]["landmarks"],
