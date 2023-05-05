@@ -483,6 +483,28 @@ def global_registration(ba_poses, ba_points, landmarks_global):
         
     return global_poses, global_triang_points
 
+def global_registration_np(ba_poses, src, dst):
+    scale, R, t, mean_dist = point_set_registration(src, dst, verbose=True)
+    
+    global_triang_points = None
+    
+    R_inv, t_inv = utils.invert_Rt(R, t)
+
+    global_poses = {}
+    for cam,data in ba_poses.items():
+
+        R = np.array(data['R'])
+        t = np.reshape(data['t'], (3,1))
+
+        R2 = np.dot(R, R_inv)
+        t2 = np.dot(R, t_inv.reshape(3,-1)) + t.reshape(3,-1)*scale   
+
+        global_poses[cam] = {'K':data['K'], 'dist':data['dist'],
+                             'R':R2.tolist(), 't':t2.ravel().tolist()}
+        
+    return global_poses, global_triang_points
+
+
 def visualise_global_registration(global_poses, landmarks_global, ba_poses, ba_points, 
                                   filenames, output_path="output/global_registration"):
     import matplotlib.pyplot as plt

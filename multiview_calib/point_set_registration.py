@@ -132,7 +132,8 @@ def point_set_registration(src, dst, fixed_scale=None, verbose=True):
         return average_distance(src_transf, _dst)  
 
     x0 = pack_params(R, t, scale)        
-    res = minimize(funct, x0, method='Nelder-Mead', 
+    # res = minimize(funct, x0, method='Nelder-Mead', 
+    res = minimize(funct, x0, 
                    options={'maxiter':10000, 'disp':True}, 
                    tol=1e-24)
     #if verbose:
