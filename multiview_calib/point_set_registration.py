@@ -21,16 +21,12 @@ def estimate_scale_point_sets(src, dst, max_est=50000):
     np.random.shuffle(idxs)
     
     # computes cross ratios between all pairs of points
-    scales = []
-    for i, (j,k) in enumerate(itertools.combinations(idxs, 2)):
-        d1 = np.linalg.norm(src[j]-src[k])
-        d2 = np.linalg.norm(dst[j]-dst[k])
-        scales.append(d2/d1)
-        
-        if i>max_est:
-            break
-        
-    return np.nanmedian(scales), np.nanstd(scales)
+    idx_pairs = np.array(list(itertools.combinations(idxs, 2)))
+    d1 = np.linalg.norm(src[idx_pairs[:,0]]-src[idx_pairs[:,1]], axis=1)
+    d2 = np.linalg.norm(dst[idx_pairs[:,0]]-dst[idx_pairs[:,1]], axis=1)
+    scales = d2/d1
+    scales_clean = scales[(~np.isnan(scales)) & (~np.isinf(scales)) & (scales<max_est)]
+    return np.median(scales_clean), np.std(scales_clean)
 
 def procrustes_registration(src, dst):
     """
