@@ -30,6 +30,10 @@ class CalibPredict:
         self.poses = calib['ba_poses']
         self.image_shape = list(calib['intrinsics'].values())[0]['image_shape'] if 'intrinsics' in calib else None #HxW
         self.views = sorted(list(calib['ba_poses'].keys()))
+        for view in self.views:
+            for item in ['K', 'R', 't', 'dist']:
+                self.poses[view][item] = np.array(self.poses[view][item])
+
 
     def p3d_to_p2d(self, p3d:np.ndarray, image_shape=None) -> np.ndarray:
         """
@@ -42,8 +46,8 @@ class CalibPredict:
         p2d: nview_nsample_**_xy
         """
         assert p3d.shape[-1] == 3
-        p3d_flatten = p3d.reshape(-1, 3)
-        if image_shape is None:
+        p3d_flatten = p3d.astype(float).reshape(-1, 3)
+        if image_shape is None and self.image_shape is not None:
             image_shape = self.image_shape
         nviews = len(self.poses)
         p2d = np.zeros((nviews, p3d_flatten.shape[0], 2), dtype=np.float64) + np.nan   # nviews_nsample_2
@@ -51,14 +55,13 @@ class CalibPredict:
         if image_shape is not None:
             mask_inside = lambda proj: np.logical_and.reduce([proj[:,0]>0, proj[:,0]<image_shape[1],
                                                 proj[:,1]>0, proj[:,1]<image_shape[0]])
-        else:
-            mask_inside = lambda proj: np.logical_and.reduce([proj[:,0]==proj[:,0], proj[:,1]==proj[:,1]])
-        
+                    
         for view in views:
-            param = lambda NAME : np.array(self.poses[view][NAME])
-            K,R,t,dist = param('K'), param('R'), param('t'), param('dist')
+            param = self.poses[view]
+            K,R,t,dist = param['K'], param['R'], param['t'], param['dist']
             p2d_tmp, _ = project_points(p3d_flatten, K, R, t, dist, image_shape)
-            p2d_tmp[~mask_inside(p2d_tmp)] = np.nan
+            if image_shape is not None:
+                p2d_tmp[~mask_inside(p2d_tmp)] = np.nan
             p2d[view] = p2d_tmp
         p2d = p2d.reshape((nviews, *p3d.shape[:-1], 2))
         return p2d
@@ -83,6 +86,30 @@ class CalibPredict:
         p3d = p3d.reshape(*original_shape[1:-1], 3)
         return p3d
 
+    def get_cam_pos_p3d(self) -> np.ndarray:
+        """
+        Get camera position in 3D.
+        """
+        cam_pos = np.zeros((len(self.views), 3), dtype=float)
+        for i, view in enumerate(self.views):
+            param = self.poses[view]
+            R,t = param['R'], param['t']
+            cam_pos[i] = (-np.linalg.inv(R) @ t.reshape(-1,1)).ravel()
+        return cam_pos
+    
+    def get_cam_direct_p3d(self) -> np.ndarray:
+        """
+        Get camera direction of X,Y,Z
+        """
+        cam_oxyz = np.zeros((len(self.views), 4, 3), dtype=float)
+        oxyz = np.eye(4)[1:,:] #(3,4)
+        for i, view in enumerate(self.views):
+            param = self.poses[view]
+            R,t = param['R'], param['t']
+            cam_oxyz[i] = (np.linalg.inv(R) @ (oxyz-t.reshape(3,1))).T
+        cam_xyz = cam_oxyz[:,1:] - cam_oxyz[:,[0]]
+        return cam_xyz
+    
 
 def build_input_np(views, poses:dict, landmarks:np.ndarray) -> np.ndarray:
     # transform camera poses to numpy array

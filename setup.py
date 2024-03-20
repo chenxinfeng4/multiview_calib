@@ -5,6 +5,6 @@ setup(
     packages=find_packages(include=['multiview_calib*']),
     url='https://github.com/cvlab-epfl/multiview_calib',
     author='cvlab-epfl',
-    install_requires=['numpy', 'scipy', 'imageio', 'matplotlib']
+    install_requires=['numpy', 'scipy', 'imageio', 'matplotlib', 'tqdm', 'networkx']
 )
 
