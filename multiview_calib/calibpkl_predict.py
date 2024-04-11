@@ -86,6 +86,24 @@ class CalibPredict:
         p3d = p3d.reshape(*original_shape[1:-1], 3)
         return p3d
 
+    def p3d_alignby_cam(self, icam:int, p3d:np.ndarray) -> np.ndarray:
+        """
+        Convert 3D points to 3D points.
+        ---------- inputs ----------
+        p3d: nsample_**_xy
+        image_shape: (H, W)
+
+        ---------- outputs ----------
+        p3d_align: nsample_**_xyz
+        """
+        param = self.poses[icam]
+        assert p3d.shape[-1] == 3
+        R,t = param['R'], param['t']
+        p3d_T = p3d.reshape(-1, 3).T
+        p3d_algn_T = R@p3d_T + t.reshape(-1,1)
+        p3d_algn = p3d_algn_T.T.reshape(*p3d.shape)
+        return p3d_algn
+
     def get_cam_pos_p3d(self) -> np.ndarray:
         """
         Get camera position in 3D.
